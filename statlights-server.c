@@ -33,7 +33,7 @@ Psuedo code now
 	when receive packet ending with "\r\n\r\n",
 		send "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}";
 	close connection;
-	exit 0;
+	goto top;
 
 */
 #include <stdio.h>
@@ -43,10 +43,21 @@ Psuedo code now
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <signal.h>
+
+int sockfd, newsockfd;
 
 void error(const char *msg){
 	perror(msg);
 	exit(1);
+}
+
+void intHandler(int signum) {
+	if (newsockfd != 0)
+		close(newsockfd);
+	if (sockfd != 0)
+		close(sockfd);
+	exit(0);
 }
 
 int endsWith(const char *str, const char *suffix) {
@@ -60,7 +71,9 @@ int endsWith(const char *str, const char *suffix) {
 }
 
 int main(int argc, char *argv[]){
-	int sockfd, newsockfd, portno;
+	signal(SIGINT, intHandler);
+
+	int portno;
 	socklen_t clilen;
 	char buffer[256];
 	struct sockaddr_in serv_addr, cli_addr;
@@ -72,6 +85,7 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&(int){1},sizeof(int));
 	if (sockfd < 0)
 		error("ERROR opening socket");
 	bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -83,28 +97,28 @@ int main(int argc, char *argv[]){
 		error("ERROR on binding");
 	listen(sockfd, 5);
 	clilen = sizeof(cli_addr);
-	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	if (newsockfd < 0)
-		error("ERROR on accept");
-	l = 1;
-	while (l) {
-		bzero(buffer, 256);
-		n = read(newsockfd, buffer, 255);
-		if (n < 0)
-			error("ERROR reading from socket");
-		if (n == 0) {
-			close(newsockfd);
-			close(sockfd);
-			exit(0);
+	while (1) {
+		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		if (newsockfd < 0)
+			error("ERROR on accept");
+		l = 1;
+		while (l) {
+			bzero(buffer, 256);
+			n = read(newsockfd, buffer, 255);
+			if (n < 0)
+				error("ERROR reading from socket");
+			if (n == 0) {
+				close(newsockfd);
+				close(sockfd);
+				exit(0);
+			}
+			if (endsWith(buffer, "\r\n\r\n"))
+				l = 0;
+			printf("%s", buffer);
 		}
-		if (endsWith(buffer, "\r\n\r\n"))
-			l = 0;
-		printf("%s", buffer);
+		n = write(newsockfd, "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}", 66);
+		if (n < 0)
+			error("ERROR writing to socket");
+		close(newsockfd);
 	}
-	n = write(newsockfd, "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}", 66);
-	if (n < 0)
-		error("ERROR writing to socket");
-	close(newsockfd);
-	close(sockfd);
-	exit(0);
 }
