@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Statlights</title>
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap">
+	<style>
+		body {
+			background-color: black;
+			color: white;
+			font-family: 'Roboto Mono', monospace;
+			white-space: nowrap;
+		}
+		tr {
+			line-height: 1.9;
+		}
+		span.red, span.yellow, span.green {
+			padding: 5px;
+			margin-left: 3px;
+			color: black;
+			opacity: 0.2;
+		}
+		span.red {
+			background-color: #f00;
+		}
+		span.yellow {
+			background-color: #ff0;
+		}
+		span.green {
+			background-color: #0f0;
+		}
+		span.steady {
+			opacity: 1;
+		}
+		span.blink {
+			animation: blink 1s infinite ease-out;
+		}
+		@-webkit-keyframes blink {
+			0% {
+				opacity: 1;
+			}
+			42% {
+				opacity: 1;
+			}
+			50% {
+    		opacity: 0.2;
+			}
+			92% {
+    		opacity: 0.2;
+			}
+			100% {
+				opacity: 1;
+			}
+		}
+	</style>
+	<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+	<script>
+		/*function getPrivateIP(onNewIP) {
+			//onNewIp - your listener function for new IPs
+		  //compatibility for firefox and chrome
+		  var myPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+		  var pc = new myPeerConnection({
+		      iceServers: []
+		    }),
+		    noop = function() {},
+		    localIPs = {},
+		    ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/g,
+		    key;
+
+		  function iterateIP(ip) {
+		    if(!localIPs[ip]) onNewIP(ip);
+		    localIPs[ip] = true;
+		  }
+
+		  //create a bogus data channel
+		  pc.createDataChannel("");
+
+		  // create offer and set local description
+		  pc.createOffer().then(function(sdp) {
+		    sdp.sdp.split('\n').forEach(function(line) {
+		      if(line.indexOf('candidate') < 0) return;
+		      line.match(ipRegex).forEach(iterateIP);
+		    });
+
+		    pc.setLocalDescription(sdp, noop, noop);
+		  }).catch(function(reason) {
+		    // An error occurred, so handle the failure to connect
+		  });
+
+		  //listen for candidate events
+		  pc.onicecandidate = function(ice) {
+		    if(!ice || !ice.candidate || !ice.candidate.candidate || !ice.candidate.candidate.match(ipRegex)) return;
+		    ice.candidate.candidate.match(ipRegex).forEach(iterateIP);
+		  };
+		}
+		getPrivateIP(function(ip) {
+		  $('body').text("Your local IP address: " + ip);
+		});*/
+	</script>
+</head>
+<!--<body>
+	Your local IP address couldn't be found.<br>
+	Chrome: Please disable <code>chrome://flags/#enable-webrtc-hide-local-ips-with-mdns</code><br>
+	Firefox: Go to <code>about:config</code> and set <code>media.peerconnection.ice.obfuscate_host_addresses</code> to false
+</body>-->
+<body>
+	<table>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> no network connection
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="steady red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> connection timed out or HTTP 4xx
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="steady red">DOWN</span><span class="steady green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> connection refused or HTTP 5xx
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="blink red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> host unreachable
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="steady green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> load < 20%t
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="blink green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="steady yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> load > 60%t
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="blink yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> load > 100%t
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="steady yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> ram > 50%
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="blink yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> ram > 80%
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="steady red">SWAP</span><span class="red">DISK</span> swap > 50%
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="blink red">SWAP</span><span class="red">DISK</span> swap > 80%
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="steady red">DISK</span> a local fs in fstab > 50%
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span class="name">hostname</span>
+			</td>
+			<td>
+				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="blink red">DISK</span> a local fs in fstab > 80%
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
