@@ -45,8 +45,8 @@ Psuedo code now
 #include <netinet/in.h>
 
 void error(const char *msg){
-  perror(msg);
-  exit(1);
+	perror(msg);
+	exit(1);
 }
 
 int main(int argc, char *argv[]){
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(portno);
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-	  error("ERROR on binding");
+		error("ERROR on binding");
 	listen(sockfd, 5);
 	clilen = sizeof(cli_addr);
 	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
