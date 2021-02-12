@@ -11,7 +11,7 @@ Phase 1.2 psuedo code
 	close connection;
 	goto top;
 
-Phase 1.1 psuedo code
+✓ Phase 1.1 psuedo code
 
 	open port TCP/arg1 for listening;
 	when all received data contains "\r\n\r\n",
@@ -19,15 +19,7 @@ Phase 1.1 psuedo code
 	close connection;
 	goto top;
 
-Phase 1 psuedo code
-
-	open port TCP/arg1 for listening;
-	when receive packet ending with "\r\n\r\n",
-		send "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}";
-	close connection;
-	goto top;
-
-Psuedo code now
+✓ Phase 1 psuedo code
 
 	open port TCP/arg1 for listening;
 	when receive packet ending with "\r\n\r\n",
@@ -58,16 +50,6 @@ void intHandler(int signum) {
 	if (sockfd != 0)
 		close(sockfd);
 	exit(0);
-}
-
-int endsWith(const char *str, const char *suffix) {
-  if (!str || !suffix)
-    return 0;
-  size_t lenstr = strlen(str);
-  size_t lensuffix = strlen(suffix);
-  if (lensuffix >  lenstr)
-    return 0;
-  return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
 
 int main(int argc, char *argv[]){
@@ -112,7 +94,7 @@ int main(int argc, char *argv[]){
 				close(sockfd);
 				exit(0);
 			}
-			if (endsWith(buffer, "\r\n\r\n"))
+			if (strstr(buffer, "\r\n\r\n") != NULL)
 				l = 0;
 			printf("%s", buffer);
 		}
