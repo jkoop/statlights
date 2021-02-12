@@ -30,7 +30,7 @@ Phase 1 psuedo code
 Psuedo code now
 
 	open port TCP/arg1 for listening;
-	when receive packet,
+	when receive packet ending with "\r\n\r\n",
 		send "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}";
 	close connection;
 	exit 0;
@@ -49,12 +49,24 @@ void error(const char *msg){
 	exit(1);
 }
 
+int endsWith(const char *str, const char *suffix) {
+  if (!str || !suffix)
+    return 0;
+  size_t lenstr = strlen(str);
+  size_t lensuffix = strlen(suffix);
+  if (lensuffix >  lenstr)
+    return 0;
+  return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
 int main(int argc, char *argv[]){
 	int sockfd, newsockfd, portno;
 	socklen_t clilen;
 	char buffer[256];
 	struct sockaddr_in serv_addr, cli_addr;
 	int n;
+	int l;
+
 	if (argc < 2) {
 		fprintf(stderr,"ERROR, no port provided\n");
 		exit(1);
@@ -74,11 +86,21 @@ int main(int argc, char *argv[]){
 	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	if (newsockfd < 0)
 		error("ERROR on accept");
-	bzero(buffer, 256);
-	n = read(newsockfd, buffer, 255);
-	if (n < 0)
-		error("ERROR reading from socket");
-	printf("Here is the message: %s\n", buffer);
+	l = 1;
+	while (l) {
+		bzero(buffer, 256);
+		n = read(newsockfd, buffer, 255);
+		if (n < 0)
+			error("ERROR reading from socket");
+		if (n == 0) {
+			close(newsockfd);
+			close(sockfd);
+			exit(0);
+		}
+		if (endsWith(buffer, "\r\n\r\n"))
+			l = 0;
+		printf("%s", buffer);
+	}
 	n = write(newsockfd, "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}", 66);
 	if (n < 0)
 		error("ERROR writing to socket");
