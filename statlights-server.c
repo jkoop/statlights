@@ -1,6 +1,6 @@
 /*
 
-Phase 1.2 psuedo code
+✓ Phase 1.2 psuedo code
 
 	open port TCP/arg1 for listening;
 	when all received data contains "\r\n\r\n",
@@ -52,15 +52,23 @@ void intHandler(int signum) {
 	exit(0);
 }
 
+int strstart(const char *pre, const char *str) {
+    return strncmp(pre, str, strlen(pre)) == 0;
+}
+
+int netsend(const char *string) {
+	printf("%s", string);
+	return write(newsockfd, string, strlen(string));
+}
+
 int main(int argc, char *argv[]){
 	signal(SIGINT, intHandler);
 
 	int portno;
 	socklen_t clilen;
-	char buffer[256];
+	char buffer[256], sendBuff[256];
 	struct sockaddr_in serv_addr, cli_addr;
-	int n;
-	int l;
+	int n, l, get;
 
 	if (argc < 2) {
 		fprintf(stderr,"ERROR, no port provided\n");
@@ -84,6 +92,7 @@ int main(int argc, char *argv[]){
 		if (newsockfd < 0)
 			error("ERROR on accept");
 		l = 1;
+		get = 0;
 		while (l) {
 			bzero(buffer, 256);
 			n = read(newsockfd, buffer, 255);
@@ -94,11 +103,18 @@ int main(int argc, char *argv[]){
 				close(sockfd);
 				exit(0);
 			}
+			if (strstart("GET ", buffer))
+				get = 1;
 			if (strstr(buffer, "\r\n\r\n") != NULL)
 				l = 0;
 			printf("%s", buffer);
 		}
-		n = write(newsockfd, "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}", 66);
+		bzero(sendBuff, 256);
+		if (get) {
+			n = netsend("HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n{\"name\":\"zeta\"}\n");
+		} else {
+			n = netsend("HTTP/1.1 400 Bad Request\n");
+		}
 		if (n < 0)
 			error("ERROR writing to socket");
 		close(newsockfd);
