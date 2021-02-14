@@ -115,7 +115,7 @@ void serve(const int newsockfd) {
 		struct sysinfo si;
 		sysinfo (&si);
 		char swap[16];
-		snprintf(swap, sizeof swap, "%f", ((float)(si.freeswap - si.totalswap) / si.totalswap));
+		snprintf(swap, sizeof swap, "%f", ((float)(si.totalswap - si.freeswap) / si.totalswap));
 		if (si.totalswap == 0)
 			strcpy(swap, "null");
 
