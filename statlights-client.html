@@ -19,6 +19,7 @@
 			margin-left: 3px;
 			color: black;
 			opacity: 0.2;
+			transition: 0.08s;
 		}
 		span.red {
 			background-color: #f00;
@@ -53,122 +54,101 @@
 			}
 		}
 	</style>
-	<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+	<script>
+		function get(item, id){
+			$.ajax({
+				url: item
+			}).done(function(data){
+				$('#' + id + ' span.down').removeClass(['steady', 'blink']);
+				$('#' + id).attr('title', "load: "+data.load+"\nram: "+data.ram+"\nswap: "+data.swap+"\ndisk: unknown");
+
+				// hostname
+				$('#' + id + ' span.name').text(data.name);
+
+				// load
+				if(data.load == null){
+					$('#' + id + ' span.ready').removeClass('steady');
+					$('#' + id + ' span.ready').addClass('blink');
+					$('#' + id + ' span.busy') .removeClass(['steady', 'blink']);
+				}else if(data.load > 0.9){
+					$('#' + id + ' span.busy').removeClass('steady');
+					$('#' + id + ' span.busy').addClass('blink');
+					$('#' + id + ' span.ready') .removeClass(['steady', 'blink']);
+				}else if(data.load > 0.5){
+					$('#' + id + ' span.busy').removeClass('blink');
+					$('#' + id + ' span.busy').addClass('steady');
+					$('#' + id + ' span.ready') .removeClass(['steady', 'blink']);
+				}else if(data.load <= 0.5){
+					$('#' + id + ' span.ready').removeClass('blink');
+					$('#' + id + ' span.ready').addClass('steady');
+					$('#' + id + ' span.busy') .removeClass(['steady', 'blink']);
+				}else{
+					$('#' + id + ' span.ready').removeClass(['steady', 'blink']);
+					$('#' + id + ' span.busy').removeClass(['steady', 'blink']);
+				}
+
+				// ram
+				if(data.ram > 0.9 || data.ram == null){
+					$('#' + id + ' span.ram').removeClass('steady');
+					$('#' + id + ' span.ram').addClass('blink');
+				}else if(data.ram > 0.7){
+					$('#' + id + ' span.ram').addClass('steady');
+					$('#' + id + ' span.ram').removeClass('blink');
+				}else{
+					$('#' + id + ' span.ram').removeClass(['steady', 'blink']);
+				}
+
+				// swap
+				if(data.swap > 0.9 || data.swap == null){
+					$('#' + id + ' span.swap').removeClass('steady');
+					$('#' + id + ' span.swap').addClass('blink');
+				}else if(data.swap > 0.7){
+					$('#' + id + ' span.swap').addClass('steady');
+					$('#' + id + ' span.swap').removeClass('blink');
+				}else{
+					$('#' + id + ' span.swap').removeClass(['steady', 'blink']);
+				}
+			}).fail(function(xhr, status, error){
+				$('#' + id + ' span:not(.name)').removeClass(['steady', 'blink']);
+				$('#' + id + ' span.down').addClass('blink');
+		  });
+		}
+
+		$().ready(function(){
+			server = [
+				'http://10.0.0.1:2364/',
+				'http://localhost:2364/',
+			];
+
+			server.forEach((item, i) => {
+				if(typeof id == 'undefined'){
+					id = [];
+				}
+				id[item] = item.replace(/[\u00A0-\u9999<>\&"'\./:]/g, function(i) {
+					return '_';
+				});
+				$('tbody').append('<tr id="' + id[item] + '">');
+				$('tr').last().append('<td>');
+				$('td').last().html('<span class="name">' + id[item]);
+				$('tr').last().append('<td>');
+				$('td').last().append('<span class="red down">DOWN</span>');
+				$('td').last().append('<span class="green ready">READY</span>');
+				$('td').last().append('<span class="yellow busy">BUSY</span>');
+				$('td').last().append('<span class="yellow ram">RAM</span>');
+				$('td').last().append('<span class="red swap">SWAP</span>');
+				$('td').last().append('<span class="red disk">DISK</span>');
+
+				get(item, id[item]);
+				setInterval(function(){get(item, id[item])}, 2500);
+			});
+		});
+	</script>
 </head>
 <body>
 	<table>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> no network connection
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="steady red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> connection timed out or HTTP 4xx
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="steady red">DOWN</span><span class="steady green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> connection refused or HTTP 5xx
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="blink red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> host unreachable
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="steady green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> load < 20%t
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="blink green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span>
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="steady yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> load > 60%t
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="blink yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> load > 100%t
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="steady yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> ram > 50%
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="blink yellow">RAM</span><span class="red">SWAP</span><span class="red">DISK</span> ram > 80%
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="steady red">SWAP</span><span class="red">DISK</span> swap > 50%
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="blink red">SWAP</span><span class="red">DISK</span> swap > 80%
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="steady red">DISK</span> a local fs in fstab > 50%
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<span class="name">hostname</span>
-			</td>
-			<td>
-				<span class="red">DOWN</span><span class="green">READY</span><span class="yellow">BUSY</span><span class="yellow">RAM</span><span class="red">SWAP</span><span class="blink red">DISK</span> a local fs in fstab > 80%
-			</td>
-		</tr>
+		<tbody>
+		</tbody>
 	</table>
 </body>
 </html>

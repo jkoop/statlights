@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 #include <sys/sysinfo.h>
 
 int sockfd, newsockfd;
+float load;
 
 void error(const char *msg){
 	perror(msg);
@@ -45,6 +47,61 @@ void *strinsert(char *haystack, const char *needle, const int offset) {
 	strcpy(haystack, result);
 }
 
+long strtolong(char *string){
+	char *ptr = string;
+	while (*ptr) {
+		if (isdigit(*ptr)) {
+			return strtol(ptr, &ptr, 10);
+		} else {
+			ptr++;
+		}
+	}
+}
+
+void *loadCalc(void *vargp){
+	unsigned long procOldTotal,
+		procOldIdle,
+		procNewTotal,
+		procNewIdle,
+		procDiffTotal,
+		procDiffIdle;
+	char filebuffer[96],
+		delim[] = " ",
+		*token;
+	FILE *stream;
+
+	while (1){
+		procOldTotal = procNewTotal;
+		procOldIdle  = procNewIdle;
+
+		stream = fopen("/proc/stat", "r");
+		fread(&filebuffer, sizeof(char), 96, stream);
+		fclose(stream);
+		char *token  = strtok(filebuffer+4, delim);
+		procNewTotal  = strtolong(token);
+		strtok(NULL, delim);
+		procNewTotal += strtolong(token);
+		strtok(NULL, delim);
+		procNewTotal += strtolong(token);
+		strtok(NULL, delim);
+		procNewIdle   = strtolong(token);
+		procNewTotal += procNewIdle;
+		strtok(NULL, delim);
+		procNewTotal += strtolong(token);
+		strtok(NULL, delim);
+		procNewTotal += strtolong(token);
+		strtok(NULL, delim);
+		procNewTotal += strtolong(token);
+
+		procDiffTotal = procNewTotal - procOldTotal;
+		procDiffIdle  = procNewIdle  - procOldIdle ;
+
+		load = (float)(procDiffTotal - procDiffIdle) / (float)procDiffTotal;
+
+	  sleep(2);
+	}
+}
+
 void serve(const int newsockfd) {
 	int n, insert;
 	int l = 1;
@@ -77,6 +134,12 @@ void serve(const int newsockfd) {
 		bzero(hostname, 63);
 		gethostname(hostname, 63);
 
+		// load
+		char loads[16];
+		snprintf(loads, sizeof loads, "%f", load);
+		if (load != load)
+			strcpy(loads, "null");
+
 		// ram
 		char filebuffer[128];
 		FILE *stream;
@@ -87,29 +150,12 @@ void serve(const int newsockfd) {
 		char *ramtotal = strtok(filebuffer, delim);
 		strtok(NULL, delim);
 		char *ramavail = strtok(NULL, delim);
-		char *string = ramtotal, *ptr = string;
-		int ramtotali;
-		while (*ptr) {
-			if (isdigit(*ptr)) {
-				long val = strtol(ptr, &ptr, 10);
-				ramtotali = val;
-			} else {
-				ptr++;
-			}
-		}
-		string = ramavail;
-		ptr = string;
-		int ramavaili;
-		while (*ptr) {
-			if (isdigit(*ptr)) {
-				long val = strtol(ptr, &ptr, 10);
-				ramavaili = val;
-			} else {
-				ptr++;
-			}
-		}
+		long ramtotali = strtolong(ramtotal);
+		long ramavaili = strtolong(ramavail);
 		char ram[16];
 		snprintf(ram, sizeof ram, "%f", ((float)(ramtotali - ramavaili) / ramtotali));
+		if (ramtotali == 0)
+			strcpy(ram, "null");
 
 		//swap
 		struct sysinfo si;
@@ -119,16 +165,20 @@ void serve(const int newsockfd) {
 		if (si.totalswap == 0)
 			strcpy(swap, "null");
 
-		strcpy(httpok, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"name\":\"\",\"ram\":,\"swap\":}\n");
-		insert = 60;
+		strcpy(httpok, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n{\"name\":\"\",\"load\":,\"ram\":,\"swap\":}\n");
+		insert = 92;
 
 		//hostname
 		strinsert(httpok, hostname, insert);
-		insert = insert + strlen(hostname) + 8;
+		insert = insert + strlen(hostname) + 9;
+
+		//load
+		strinsert(httpok, loads, insert);
+		insert = insert + strlen(loads) + 7;
 
 		//ram
 		strinsert(httpok, ram, insert);
-		insert = insert + strlen(hostname) + 6;
+		insert = insert + strlen(ram) + 8;
 
 		//swap
 		strinsert(httpok, swap, insert);
@@ -146,12 +196,16 @@ void serve(const int newsockfd) {
 int main(int argc, char *argv[]){
 	signal(SIGINT, intHandler);
 
+	pthread_t thread_id;
+  printf("Before Thread\n");
+  pthread_create(&thread_id, NULL, loadCalc, NULL);
+
 	int portno;
 	socklen_t clilen;
 	struct sockaddr_in serv_addr, cli_addr;
 
 	if (argc == 2) {
-		portno = atoi(argv[1]);
+		portno = atol(argv[1]);
 	} else {
 		fprintf(stderr,"Note: no port provided, using default port 2364\n");
 		portno = 2364;
