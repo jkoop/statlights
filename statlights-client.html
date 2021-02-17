@@ -118,6 +118,7 @@
 		$().ready(function(){
 			server = [
 				'http://10.0.0.1:2364/',
+				'http://192.168.0.22:2364/',
 				'http://localhost:2364/',
 			];
 
@@ -126,7 +127,7 @@
 					id = [];
 				}
 				id[item] = item.replace(/[\u00A0-\u9999<>\&"'\./:]/g, function(i) {
-					return '_';
+					return '';
 				});
 				$('tbody').append('<tr id="' + id[item] + '">');
 				$('tr').last().append('<td>');

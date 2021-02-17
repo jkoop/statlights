@@ -48,6 +48,10 @@ void *strinsert(char *haystack, const char *needle, const int offset) {
 }
 
 long strtolong(char *string){
+	if (string == NULL){
+		return 0;
+	}
+
 	char *ptr = string;
 	while (*ptr) {
 		if (isdigit(*ptr)) {
@@ -56,47 +60,53 @@ long strtolong(char *string){
 			ptr++;
 		}
 	}
+	return 0;
 }
 
 void *loadCalc(void *vargp){
-	unsigned long procOldTotal,
-		procOldIdle,
-		procNewTotal,
-		procNewIdle,
-		procDiffTotal,
-		procDiffIdle;
+	unsigned long oldTotal,
+		oldIdle,
+		newTotal,
+		newIdle,
+		diffTotal,
+		diffIdle;
+	int counter;
 	char filebuffer[96],
-		delim[] = " ",
-		*token;
+		*token,
+		*tok;
 	FILE *stream;
 
 	while (1){
-		procOldTotal = procNewTotal;
-		procOldIdle  = procNewIdle;
+		oldTotal = newTotal;
+		oldIdle  = newIdle;
 
 		stream = fopen("/proc/stat", "r");
 		fread(&filebuffer, sizeof(char), 96, stream);
 		fclose(stream);
-		char *token  = strtok(filebuffer+4, delim);
-		procNewTotal  = strtolong(token);
-		strtok(NULL, delim);
-		procNewTotal += strtolong(token);
-		strtok(NULL, delim);
-		procNewTotal += strtolong(token);
-		strtok(NULL, delim);
-		procNewIdle   = strtolong(token);
-		procNewTotal += procNewIdle;
-		strtok(NULL, delim);
-		procNewTotal += strtolong(token);
-		strtok(NULL, delim);
-		procNewTotal += strtolong(token);
-		strtok(NULL, delim);
-		procNewTotal += strtolong(token);
 
-		procDiffTotal = procNewTotal - procOldTotal;
-		procDiffIdle  = procNewIdle  - procOldIdle ;
+    token    = strtok(filebuffer, "\n");
+    tok      = strtok(token, " ");
+		newTotal = 0;
+		counter  = 0;
 
-		load = (float)(procDiffTotal - procDiffIdle) / (float)procDiffTotal;
+		while (tok != NULL) {
+			newTotal += strtolong(tok);
+
+			if (isdigit(*tok)) {
+				counter++;
+			}
+
+			if (counter == 4) {
+				newIdle = strtolong(tok);
+			}
+
+			tok = strtok(NULL, " ");
+    }
+
+		diffTotal = newTotal - oldTotal;
+		diffIdle  = newIdle  - oldIdle ;
+
+		load = (float)(diffTotal - diffIdle) / (float)diffTotal;
 
 	  sleep(2);
 	}
@@ -146,10 +156,9 @@ void serve(const int newsockfd) {
 		stream = fopen("/proc/meminfo", "r");
 		fread(&filebuffer, sizeof(char), 128, stream);
 		fclose(stream);
-		char delim[] = "\n";
-		char *ramtotal = strtok(filebuffer, delim);
-		strtok(NULL, delim);
-		char *ramavail = strtok(NULL, delim);
+		char *ramtotal = strtok(filebuffer, "\n");
+		strtok(NULL, "\n");
+		char *ramavail = strtok(NULL, "\n");
 		long ramtotali = strtolong(ramtotal);
 		long ramavaili = strtolong(ramavail);
 		char ram[16];
@@ -197,7 +206,6 @@ int main(int argc, char *argv[]){
 	signal(SIGINT, intHandler);
 
 	pthread_t thread_id;
-  printf("Before Thread\n");
   pthread_create(&thread_id, NULL, loadCalc, NULL);
 
 	int portno;
